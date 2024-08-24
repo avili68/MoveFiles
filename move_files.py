@@ -1,5 +1,10 @@
 #!/usr/bin/env python
+"""
+This script purpose is to move files from one directory to another
 
+this done by copy files, one by one, verify that the file was copied
+and then delete it from the source.
+"""
 # Builtin modules
 import argparse
 import configparser
@@ -9,7 +14,6 @@ import os
 import platform
 import shutil
 import sys
-import time
 
 # 3ed party modules
 
@@ -22,7 +26,7 @@ CFG_FILE = f"{BASE_NAME}.cfg"
 OS = platform.system()
 
 # Some global variables
-total_files = 0
+total_files: int = 0
 
 # Setting up the log file
 log = logging.getLogger()
@@ -44,7 +48,11 @@ parser = argparse.ArgumentParser(description="Move files from one directory to a
 parser.add_argument("-v", "--verbose", action="store_true", help="Run in verbose mode")
 parser.add_argument("-d", "--debug", action="store_true", help="Run in debug mode")
 parser.add_argument(
-    "-c", "--section", action="store", default="DEFAULT", help="Which section to use"
+    "-c",
+    "--section",
+    action="store",
+    default="DEFAULT",
+    help="Which section to use",
 )
 
 args = parser.parse_args()
@@ -104,20 +112,33 @@ def make_connection(op="connect"):
 
 
 def quit_prog():
+    """
+    function to run ion the end of the scripy.
+    it disconnects from the shares(s) / mount(s) and exit
+    """
     log.info("Operation finished")
     make_connection(op="disconnect")
-    log.info(
-        f"Finished moving of {config[args.section]['batch_size']} "
-        f"from {config[args.section]['source_path']} to {config[args.section]['target_path']} at {time.ctime()}"
+    msg_string = (
+        "Finished moving of {config[args.section]['batch_size']} "
+        "files from {config[args.section]['source_path']} "
+        "to {config[args.section]['target_path']} at {time.ctime()}"
     )
-    print(
-        f"Finished moving of {config[args.section]['batch_size']} "
-        f"from {config[args.section]['source_path']} to {config[args.section]['target_path']} at {time.ctime()}"
-    )
-    exit()
+
+    log.info(msg_string)
+    print(msg_string)
+    sys.exit()
 
 
 def move_files(source_dir, target_dir):
+    """
+    the actual function which move the files.
+    this is a recursive function, if the source is directory, it gets into
+    the directory and called itself.
+
+    Args:
+        source_dir (str): the directory to move file from
+        target_dir (str): the directory to move file into
+    """
     global total_files
 
     all_files = os.listdir(source_dir)
@@ -133,47 +154,47 @@ def move_files(source_dir, target_dir):
 
         src = os.path.join(source_dir, f)
         trg = os.path.join(target_dir, f)
-        OK = True
+        ok = True
         if os.path.isdir(src):
             print("", flush=True)
             try:
                 os.mkdir(trg)
             except FileExistsError:
                 pass
-            log.info(f"{src} is a Directory, The Target is {trg}")
+            log.info("%s is a Directory, The Target is %s", src, trg)
             move_files(src, trg)
             if len(os.listdir(src)) == 0:
-                log.info(f"Source dir : {src} is empty. Delete it...")
+                log.info("Source dir : %s is empty. Delete it...", src)
                 try:
                     os.rmdir(src)
                 except Exception as ex:
                     print(f"can not delete directory - {ex}")
-                    log.info(f"Delete of Directory {src} Failed - {ex}")
+                    log.info("Delete of Directory %s Failed - %s", src, ex)
             else:
-                log.info(f"Not all files in the directory {src} was deleted !")
+                log.info("Not all files in the directory %s was deleted !", src)
 
         else:
-            log.info(f"Copying the file {src} to {trg}")
+            log.info("Copying the file %s to %s", src, trg)
             try:
                 shutil.copy2(src, trg)
                 src_md5 = md5(src)
                 trg_md5 = md5(trg)
                 if src_md5 != trg_md5:
-                    OK = False
-                if OK:
+                    ok = False
+                if ok:
                     try:
-                        log.info(f"Deleting {src}")
+                        log.info("Deleting %s", src)
                         os.remove(src)
                     except Exception as ose:
-                        log.error(f"Deleting of source file {src} Failed - {ose}!")
+                        log.error("Deleting of source file %s Failed - %s!", src, ose)
             except Exception as e:
-                log.error(f"Copy of {src} failed - {e}")
+                log.error("Copy of %s failed - %s", src, e)
 
 
 if __name__ == "__main__":
 
     # Verify that all variables are defined.
-    config_ok = True
+    config_ok: bool = True
     args.section = args.section.upper()
 
     try:
