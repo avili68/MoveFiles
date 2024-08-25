@@ -37,14 +37,27 @@ logging.basicConfig(
 )
 
 # Setting the commandline arguments of the script
-parser = argparse.ArgumentParser(description="Move files from one directory to another")
-parser.add_argument("-v", "--verbose", action="store_true", help="Run in verbose mode")
-parser.add_argument("-d", "--debug", action="store_true", help="Run in debug mode")
-parser.add_argument(
-    "-c", "--section", action="store", default="DEFAULT", help="Which section to use"
+parser = argparse.ArgumentParser(
+    description="Move files from one directory to another"
 )
 parser.add_argument(
-    "--config", action="store", default=CFG_FILE, help="Use this configuration file"
+    "-v", "--verbose", action="store_true", help="Run in verbose mode"
+)
+parser.add_argument(
+    "-d", "--debug", action="store_true", help="Run in debug mode"
+)
+parser.add_argument(
+    "-c",
+    "--section",
+    action="store",
+    default="DEFAULT",
+    help="Which section to use",
+)
+parser.add_argument(
+    "--config",
+    action="store",
+    default=CFG_FILE,
+    help="Use this configuration file",
 )
 
 args = parser.parse_args()
@@ -100,7 +113,8 @@ def make_connection(op="connect", share_type: str = "source"):
 
     Args:
         op (str): which operation to use connect / disconnect
-        share_type (str): the type of the share to connect/disconnect - source / target
+        share_type (str): the type of the share to connect/disconnect
+                          source / target
     Return:
         bool : does the command succeed or not
     """
@@ -121,7 +135,10 @@ def make_connection(op="connect", share_type: str = "source"):
     if OS == "Windows":
         net_cmd = "C:/Windows/System32/net.exe"
         cmd = "{} use {} {} {}".format(
-            net_cmd, extra, config[args.section]["{}_drive".format(share_type)], share
+            net_cmd,
+            extra,
+            config[args.section]["{}_drive".format(share_type)],
+            share,
         )
     else:
         cmd = "mount -t nfs {} {}".format(
@@ -188,9 +205,15 @@ def move_files(source_dir, target_dir):
                     os.rmdir(src)
                 except Exception as ex:
                     print("can not delete directory - {}".format(ex))
-                    log.info("Delete of Directory {} Failed - {}".format(src, ex))
+                    log.info(
+                        "Delete of Directory {} Failed - {}".format(src, ex)
+                    )
             else:
-                log.info("Not all files in the directory {} was deleted !".format(src))
+                log.info(
+                    "Not all files in the directory {} was deleted !".format(
+                        src
+                    )
+                )
 
         else:
             log.info("Copying the file {} to {}".format(src, trg))
@@ -206,7 +229,9 @@ def move_files(source_dir, target_dir):
                         os.remove(src)
                     except Exception as ose:
                         log.error(
-                            "Deleting of source file {} Failed - {}!".format(src, ose)
+                            "Deleting of source file {} Failed - {}!".format(
+                                src, ose
+                            )
                         )
             except Exception as ex:
                 log.error("Copy of {} failed - {}".format(src, ex))
@@ -227,20 +252,33 @@ if __name__ == "__main__":
     # Check the source & target paths
     for sub_key in SHARE_TYPES:
         if not config.has_option(args.section, "{}_path".format(sub_key)):
-            print("Error : The value of '{}_path' is missing !".format(sub_key))
+            print(
+                "Error : The value of '{}_path' is missing !".format(sub_key)
+            )
             config_ok = False
         elif config[args.section]["{}_path".format(sub_key)] == "":
-            print("Error : The value of '{}_path' cannot be empty !".format(sub_key))
+            print(
+                "Error : The value of '{}_path' cannot be empty !".format(
+                    sub_key
+                )
+            )
             config_ok = False
 
     # Check if mount is needed
     for sub_key in SHARE_TYPES:
         if config.has_option(args.section, "connect_{}".format(sub_key)):
-            if config[args.section]["connect_{}".format(sub_key)].lower() == "true":
+            if (
+                config[args.section]["connect_{}".format(sub_key)].lower()
+                == "true"
+            ):
                 for key in ["target_drive", "share"]:
                     if config[args.section][key]:
                         if not config.has_option(args.section, key):
-                            print("Error : The value of '{}' is missing !".format(key))
+                            print(
+                                "Error : The value of '{}' is missing !".format(
+                                    key
+                                )
+                            )
                             config_ok = False
                         elif config[args.section][key]:
                             print(
@@ -272,12 +310,19 @@ if __name__ == "__main__":
         print("Cannot connect the target share to the system - Exiting !!!")
         sys.exit(1)
 
-    move_files(config[args.section]["source_path"], config[args.section]["target_path"])
+    move_files(
+        config[args.section]["source_path"],
+        config[args.section]["target_path"],
+    )
 
     # Dis-connecting the target path from the system - if needed
     for sub_key in SHARE_TYPES:
         if not make_connection(op="disconnect", share_type=sub_key):
-            print("Cannot disconnect the {} share from the system".format(sub_key))
+            print(
+                "Cannot disconnect the {} share from the system".format(
+                    sub_key
+                )
+            )
             print("You need to disconnect it manually !!!")
 
     if args.verbose:
